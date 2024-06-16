@@ -11,9 +11,11 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.1",
-    "express-session": "^1.17.3",
+    "axios": "^1.7.2",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
     "jsonwebtoken": "^8.5.1",
+    "loader": "^2.1.1",
     "nodemon": "^2.0.19"
   }
 }
