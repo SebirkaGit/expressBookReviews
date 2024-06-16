@@ -2,6 +2,7 @@ const express = require('express');
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
+const axios = require('axios');
 const public_users = express.Router();
 
 
@@ -22,41 +23,100 @@ public_users.post("/register", (req,res) => {
 });
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
-  //Write your code here
-  return res.send(JSON.stringify(books,null,10));
+// public_users.get('/',function (req, res) {
+//   //Write your code here
+//   return res.send(JSON.stringify(books,null,10));
+// });
+
+// GET endpoint to retrieve the list of books
+public_users.get('/', async (req, res) => {
+  try {
+    const response = await axios.get('http://localhost:5000'); // Replace with your server's endpoint
+   console.log("**************",response)
+    return res.status(200).json(response.data);
+  } catch (error) {
+    console.error('Error fetching books:', error.message);
+    return res.status(500).json({ message: 'Failed to fetch books' });
+  }
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-
+public_users.get('/isbn/:isbn', (req, res) => {
   const isbn = req.params.isbn;
-  res.send("Here is your Book INFO "+ JSON.stringify(books[isbn]))
- });
+
+  // Create a Promise to fetch book details
+  const fetchBookDetails = new Promise((resolve, reject) => {
+    const book = books[isbn];
+    if (book) {
+      resolve(book);
+    } else {
+      reject(new Error("Book not found"));
+    }
+  });
+
+  // Handle Promise resolution
+  fetchBookDetails
+    .then((book) => {
+      res.status(200).send(`Here is your Book INFO ${JSON.stringify(book)}`);
+    })
+    .catch((error) => {
+      res.status(404).json({ message: error.message });
+    });
+});
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
+public_users.get('/author/:author', async (req, res) => {
   const author = req.params.author.toLowerCase();
-  const filteredBooks = Object.values(books).filter(book => book.author.toLowerCase() === author);
+  
+  try {
+    // Simulating fetching data using Axios (replace with actual API call if needed)
+    const response = await axios.get('http://example.com/api/books'); // Replace with your API endpoint
+    const books = response.data.books; // Assuming the API response has a books array
 
-  if (filteredBooks.length > 0) {
-    return res.status(200).json(filteredBooks);
-  } else {
-    return res.status(404).json({ message: "No books found by this author" });
+    // Filter books by author
+    const filteredBooks = books.filter(book => book.author.toLowerCase() === author);
+
+    if (filteredBooks.length > 0) {
+      return res.status(200).json(filteredBooks);
+    } else {
+      return res.status(404).json({ message: "No books found by this author" });
+    }
+  } catch (error) {
+    console.error('Error fetching books:', error.message);
+    return res.status(500).json({ message: 'Failed to fetch books' });
   }
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
+public_users.get('/title/:title', (req, res) => {
   const title = req.params.title.toLowerCase();
-  const filteredBooks = Object.values(books).filter(book => book.title.toLowerCase() === title);
 
-  if (filteredBooks.length > 0) {
-    return res.status(200).json(filteredBooks);
-  } else {
-    return res.status(404).json({ message: "No books found with this title" });
-  }
+  findBooksByTitle(title)
+    .then(filteredBooks => {
+      if (filteredBooks.length > 0) {
+        res.status(200).json(filteredBooks);
+      } else {
+        res.status(404).json({ message: "No books found with this title" });
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching books:', error.message);
+      res.status(500).json({ message: 'Failed to fetch books' });
+    });
 });
+
+// Function to find books by title (simulating async operation)
+function findBooksByTitle(title) {
+  return new Promise((resolve, reject) => {
+    try {
+      // Simulating fetching data from booksdb.js (replace with actual logic)
+      const filteredBooks = Object.values(books).filter(book => book.title.toLowerCase() === title);
+      resolve(filteredBooks);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 
 //  Get book review
